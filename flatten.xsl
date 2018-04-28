@@ -31,6 +31,7 @@
     <!-- Templates to flatten original input, output is $flattened -->
     <xsl:template match="ab" mode="flatten">
         <xsl:copy-of select="ancestor::TEI//publicationStmt/date"/>
+        <xsl:copy-of select="ancestor::TEI//titleStmt/title[not(empty(.))]"/>
         <xsl:apply-templates mode="flatten"/>
     </xsl:template>
     <xsl:template match="date" mode="flatten"/>
@@ -66,7 +67,8 @@
     <!-- Templates to move stupid dates -->
     <xsl:template match="page" mode="date">
         <xsl:copy>
-            <xsl:copy-of select="preceding-sibling::page[1]/*[last()][self::date]"/>
+            <xsl:copy-of
+                select="preceding-sibling::page[1]/(date | title)[not(following-sibling::*[not(self::date | self::title)])]"/>
             <xsl:apply-templates mode="date"/>
         </xsl:copy>
     </xsl:template>
@@ -76,10 +78,10 @@
     <xsl:template match="lb" mode="date">
         <lb/>
     </xsl:template>
-    <xsl:template match="date" mode="date">
+    <xsl:template match="date | title" mode="date">
         <xsl:if
-            test="following-sibling::* or string-length(normalize-space(following-sibling::text())) gt 0">
-            <date when="{@when}"/>
+            test="following-sibling::*[not(self::title | self::date)]">
+            <xsl:copy-of select="."/>
         </xsl:if>
     </xsl:template>
 </xsl:stylesheet>
