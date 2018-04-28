@@ -26,7 +26,7 @@
                 <xsl:apply-templates select="$grouped" mode="date"/>
             </wrapper>
         </xsl:variable>
-        <!--<xsl:sequence select="$date"/>-->
+        <xsl:sequence select="$date"/>
         <xsl:result-document href="pages-by-meeting.xhtml" doctype-system="about:legacy-compat"
             method="xml" indent="yes" xmlns="http://www.w3.org/1999/xhtml">
             <html>
@@ -62,7 +62,8 @@
                             </xsl:variable>
                             <li data-pages="{$firstPage to $lastPage}">
                                 <xsl:value-of
-                                    select="format-date(xs:date($startDate), '[D1] [MNn] [Y1,4]','it',(),'it')"/>
+                                    select="format-date(xs:date($startDate), '[D1] [MNn] [Y1,4]', 'it', (), 'it')"
+                                />
                             </li>
                         </xsl:for-each>
                     </ul>
