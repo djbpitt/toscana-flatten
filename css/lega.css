@@ -1,0 +1,7 @@
+#page-chooser {
+    list-style-type: none;
+}
+#page-chooser > li {
+    color: blue;
+    text-decoration: underline;
+}

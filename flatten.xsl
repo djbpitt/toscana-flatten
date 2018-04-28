@@ -4,7 +4,7 @@
     xmlns:math="http://www.w3.org/2005/xpath-functions/math" exclude-result-prefixes="xs math"
     xmlns="http://www.tei-c.org/ns/1.0" xpath-default-namespace="http://www.tei-c.org/ns/1.0"
     version="3.0">
-    <xsl:output method="xml" indent="no"/>
+    <xsl:output method="xml" indent="yes"/>
     <xsl:template match="/">
         <xsl:variable name="flattened" as="element(wrapper)">
             <wrapper>
@@ -26,7 +26,49 @@
                 <xsl:apply-templates select="$grouped" mode="date"/>
             </wrapper>
         </xsl:variable>
-        <xsl:sequence select="$date"/>
+        <!--<xsl:sequence select="$date"/>-->
+        <xsl:result-document href="pages-by-meeting.xhtml" doctype-system="about:legacy-compat"
+            method="xml" indent="yes" xmlns="http://www.w3.org/1999/xhtml">
+            <html>
+                <head>
+                    <title>Hey, choose a meeting!</title>
+                    <link type="text/css" rel="stylesheet" href="css/lega.css"/>
+                </head>
+                <body>
+                    <h1>Hey, choose a meeting!</h1>
+                    <ul id="page-chooser">
+                        <xsl:for-each select="1 to count($date//date)">
+                            <xsl:variable name="startDate"
+                                select="($date//date)[position() eq current()]/@when"/>
+                            <xsl:variable name="nextDate"
+                                select="($date//date)[position() eq current() + 1]/@when"/>
+                            <xsl:variable name="firstPage" as="xs:integer"
+                                select="$startDate/ancestor::page/pb/@n"/>
+                            <xsl:variable name="lastPage" as="xs:integer">
+                                <xsl:choose>
+                                    <xsl:when test="not($nextDate)">
+                                        <xsl:value-of select="($date//page/pb)[last()]/@n"/>
+                                    </xsl:when>
+                                    <xsl:when
+                                        test="$nextDate/ancestor::page/*[1][self::date[@when eq $nextDate]]">
+                                        <xsl:value-of
+                                            select="$nextDate/ancestor::page/preceding-sibling::page[1]/pb/@n"
+                                        />
+                                    </xsl:when>
+                                    <xsl:otherwise>
+                                        <xsl:value-of select="$nextDate/ancestor::page/pb/@n"/>
+                                    </xsl:otherwise>
+                                </xsl:choose>
+                            </xsl:variable>
+                            <li data-pages="{$firstPage to $lastPage}">
+                                <xsl:value-of
+                                    select="format-date(xs:date($startDate), '[D1] [MNn] [Y1,4]','it',(),'it')"/>
+                            </li>
+                        </xsl:for-each>
+                    </ul>
+                </body>
+            </html>
+        </xsl:result-document>
     </xsl:template>
     <!-- Templates to flatten original input, output is $flattened -->
     <xsl:template match="ab" mode="flatten">
@@ -79,8 +121,7 @@
         <lb/>
     </xsl:template>
     <xsl:template match="date | title" mode="date">
-        <xsl:if
-            test="following-sibling::*[not(self::title | self::date)]">
+        <xsl:if test="following-sibling::*[not(self::title | self::date)]">
             <xsl:copy-of select="."/>
         </xsl:if>
     </xsl:template>
