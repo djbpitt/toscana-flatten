@@ -165,7 +165,7 @@
                                 <tr>
                                     <td>
                                         <a href="{$image-link}">
-                                            <img height="600px" src="{$image-link}"/>
+                                            <img height="600" src="{$image-link}"/>
                                         </a>
                                     </td>
                                     <td>
