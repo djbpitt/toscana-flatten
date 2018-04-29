@@ -5,3 +5,21 @@
     color: blue;
     text-decoration: underline;
 }
+table {
+    border-collapse: collapse;
+}
+table,
+tr,
+td,
+th {
+    border: 1px black solid;
+}
+th,
+td {
+    padding: 2px;
+}
+td > h1 {
+    font-size: 120%;
+    font-weight: bold;
+    text-align: center;
+}

@@ -1,23 +1,61 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+    xmlns:tei="http://www.tei-c.org/ns/1.0" xmlns:html="http://www.w3.org/1999/xhtml"
     xmlns:xs="http://www.w3.org/2001/XMLSchema"
-    xmlns:math="http://www.w3.org/2005/xpath-functions/math" exclude-result-prefixes="xs math"
+    xmlns:math="http://www.w3.org/2005/xpath-functions/math" exclude-result-prefixes="#all"
     xmlns="http://www.tei-c.org/ns/1.0" xpath-default-namespace="http://www.tei-c.org/ns/1.0"
     version="3.0">
     <xsl:output method="xml" indent="yes"/>
+    <!--
+        Note: Transformation must be run with Saxon PE or EE (not HE) to get Italian
+            output from format-date()
+        Workflow
+            Note: Interim structures are in TEI namespace, but are not valid TEI
+            1.  Flatten
+                Description: flatten all elements, linking start and end tags with shared @tagId values
+                Input: original XML
+                Output: $flattened
+                Mode: templates are in 'flattened' mode
+            2.  Group
+                Description: group contents of each page in <page> element
+                Input: $flattened:
+                Output: $grouped
+                Mode: templates are in ''grouped' mode
+                Notes: dates and titles are sometimes in the wrong pages
+            3.  Date fix
+                Description: move dates and titles into correct pages
+                Input: $grouped
+                Output: $date   
+                Note: templates are in 'date' mode
+            4.  Map years to pages
+                Description: create mapping of years to pages
+                Input: $date
+                Output: $page-chooser, page-chooser.xhtml
+                Mode: pull processing, no templates
+                Note: $page-chooser is serialized as navigation interface, and also used
+                    to create separate HTML output for each year
+            5.  Create HTML pages for each year
+                Description: separate HTML file in pages-by-year subdirectory for each year's pages
+                    Output is three column table: image, Italian, English
+                Input: $date (contains <page> elements)
+                Auxiliary input: $page-chooser (mapping from date to pages)
+                Output: 1921.xhtml, etc. in pages-by-year subdirectory
+                Mode: templates are in page-to-html mode
+                
+    -->
     <xsl:template match="/">
         <xsl:variable name="flattened" as="element(wrapper)">
             <wrapper>
-                <xsl:apply-templates select="descendant::div[@type='transcription']/ab"
+                <xsl:apply-templates select="descendant::div[@type = 'transcription']/ab"
                     mode="flatten"/>
-                <xsl:apply-templates select="descendant::div[@type='translation']/ab"
+                <xsl:apply-templates select="descendant::div[@type = 'translation']/ab"
                     mode="flatten"/>
             </wrapper>
         </xsl:variable>
         <xsl:variable name="grouped" as="element(wrapper)">
             <wrapper>
                 <xsl:for-each-group select="$flattened/node()" group-starting-with="pb">
-                    <page> 
+                    <page>
                         <xsl:apply-templates select="current-group()" mode="grouped"/>
                     </page>
                 </xsl:for-each-group>
@@ -28,10 +66,16 @@
                 <xsl:apply-templates select="$grouped" mode="date"/>
             </wrapper>
         </xsl:variable>
-        <xsl:sequence select="$date"/>
-        <xsl:result-document href="pages-by-meeting.xhtml" doctype-system="about:legacy-compat"
-            method="xml" indent="yes" xmlns="http://www.w3.org/1999/xhtml">
-            <html>
+        <!-- 
+            $date has been created, now do something with it
+            create mapping of dates to pages first because it's needed to group dates by year 
+        -->
+        <!-- 
+            Create HTML file that points from dates to pages
+            Store as $page-chooser and serialize as page-chooser.xhtml
+        -->
+        <xsl:variable name="page-chooser" as="element(html:html)">
+            <html xmlns="http://www.w3.org/1999/xhtml">
                 <head>
                     <title>Hey, choose a meeting!</title>
                     <link type="text/css" rel="stylesheet" href="css/lega.css"/>
@@ -39,7 +83,7 @@
                 <body>
                     <h1>Hey, choose a meeting!</h1>
                     <ul id="page-chooser">
-                        <xsl:for-each select="1 to count($date//date[parent::page[@lang='it']])">
+                        <xsl:for-each select="1 to count($date//date[parent::page[@lang = 'it']])">
                             <xsl:variable name="startDate"
                                 select="($date//date)[position() eq current()]/@when"/>
                             <xsl:variable name="nextDate"
@@ -71,7 +115,70 @@
                     </ul>
                 </body>
             </html>
+        </xsl:variable>
+        <xsl:result-document href="pages-by-meeting.xhtml" doctype-system="about:legacy-compat"
+            method="xml" indent="yes" xmlns="http://www.w3.org/1999/xhtml">
+            <xsl:sequence select="$page-chooser"/>
         </xsl:result-document>
+        <!-- 
+            Create HTML output for each year
+            Output is a three-column table, with image, Italian, English columns (in that order)
+            English is currently a placeholder, image is pointer in the form of 
+                http://toscana.newtfire.org/img/meetingMinutes/5.png
+            Variables:
+                $page-numbers: page numbers for current year
+                $pages: <page> elements (in pseudo-TEI namespace) for current year
+        -->
+        <xsl:for-each-group select="$page-chooser//html:li"
+            group-by="substring(., string-length(.) - 3)">
+            <!-- numbers of pages for the current year -->
+            <xsl:variable name="page-numbers" as="xs:integer+"
+                select="sort(distinct-values(current-group()/@data-pages/tokenize(., ' ')) ! xs:integer(.))"/>
+            <!-- <page> elements (in pseudo-TEI namespace) for current year -->
+            <xsl:variable name="pages" as="element(tei:page)+"
+                select="$date//tei:page[pb/@n = $page-numbers]"/>
+            <xsl:message select="count($pages)"/>
+            <xsl:result-document method="xml" indent="yes" doctype-system="about:legacy-compat"
+                xmlns="http://www.w3.org/1999/xhtml"
+                href="{concat('pages-by-year/',current-grouping-key(),'.xhtml')}">
+                <html>
+                    <head>
+                        <title>
+                            <xsl:value-of select="concat('Minutes of ', current-grouping-key())"/>
+                        </title>
+                        <link rel="stylesheet" type="text/css" href="../css/lega.css"/>
+                    </head>
+                    <body>
+                        <h1>
+                            <xsl:value-of select="concat('Minutes of ', current-grouping-key())"/>
+                        </h1>
+                        <table>
+                            <tr>
+                                <th>Image</th>
+                                <th>Transcription</th>
+                                <th>Translation</th>
+                            </tr>
+                            <xsl:for-each select="$pages">
+                                <xsl:variable name="image-link" as="xs:string"
+                                    select="concat('http://toscana.newtfire.org/img/meetingMinutes/', current()/pb/@n, '.png')"/>
+                                <tr>
+                                    <td>
+                                        <a href="{$image-link}">
+                                            <img height="600px" src="{$image-link}"/>
+                                        </a>
+                                    </td>
+                                    <td>
+                                        <xsl:apply-templates select="current()" mode="page-to-html"
+                                        />
+                                    </td>
+                                    <td>English</td>
+                                </tr>
+                            </xsl:for-each>
+                        </table>
+                    </body>
+                </html>
+            </xsl:result-document>
+        </xsl:for-each-group>
     </xsl:template>
     <!-- Templates to flatten original input, output is $flattened -->
     <xsl:template match="ab" mode="flatten">
@@ -86,10 +193,10 @@
             <xsl:attribute name="tagId" select="generate-id()"/>
             <xsl:copy-of select="@*"/>
             <xsl:choose>
-                <xsl:when test="self::pb[ancestor::div[@type='transcription']]">
+                <xsl:when test="self::pb[ancestor::div[@type = 'transcription']]">
                     <xsl:attribute name="lang">it</xsl:attribute>
                 </xsl:when>
-                <xsl:when test="self::pb[ancestor::div[@type='translation']]">
+                <xsl:when test="self::pb[ancestor::div[@type = 'translation']]">
                     <xsl:attribute name="lang">eng</xsl:attribute>
                 </xsl:when>
             </xsl:choose>
@@ -120,7 +227,9 @@
     <!-- Templates to move stupid dates -->
     <xsl:template match="page" mode="date">
         <xsl:copy>
-            <xsl:attribute name="lang"><xsl:value-of select="child::pb/@lang"/></xsl:attribute>
+            <xsl:attribute name="lang">
+                <xsl:value-of select="child::pb/@lang"/>
+            </xsl:attribute>
             <xsl:copy-of
                 select="preceding-sibling::page[1]/(date | title)[not(following-sibling::*[not(self::date | self::title)])]"/>
             <xsl:apply-templates mode="date"/>
@@ -130,9 +239,9 @@
         <xsl:copy-of select="."/>
     </xsl:template>
     <xsl:template match="pb" mode="date">
-<xsl:copy>
-    <xsl:copy-of select="@* except @lang"/>
-</xsl:copy>
+        <xsl:copy>
+            <xsl:copy-of select="@* except @lang"/>
+        </xsl:copy>
     </xsl:template>
     <xsl:template match="lb" mode="date">
         <lb/>
@@ -142,4 +251,15 @@
             <xsl:copy-of select="."/>
         </xsl:if>
     </xsl:template>
+    <!-- End of templates to move dates and titles and create $date -->
+    <!-- Templates to format Italian and English year/page output -->
+    <xsl:template match="lb" mode="page-to-html" xmlns="http://www.w3.org/1999/xhtml">
+        <br/>
+    </xsl:template>
+    <xsl:template match="title" mode="page-to-html" xmlns="http://www.w3.org/1999/xhtml">
+        <h1>
+            <xsl:apply-templates mode="page-to-html"/>
+        </h1>
+    </xsl:template>
+    <!-- End of templates to format Italian and English year/page output -->
 </xsl:stylesheet>
