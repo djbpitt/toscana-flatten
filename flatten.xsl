@@ -4,6 +4,8 @@
     xmlns:math="http://www.w3.org/2005/xpath-functions/math" exclude-result-prefixes="xs math"
     xmlns="http://www.tei-c.org/ns/1.0" xpath-default-namespace="http://www.tei-c.org/ns/1.0"
     version="3.0">
+    <!-- eng branch copy -->
+    <!-- 2018-04-29 zme -->
     <xsl:output method="xml" indent="yes"/>
     <xsl:template match="/">
         <xsl:variable name="flattened" as="element(wrapper)">
