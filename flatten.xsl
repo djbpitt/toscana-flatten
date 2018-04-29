@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
-    xmlns:html="http://www.w3.org/1999/xhtml" xmlns:xs="http://www.w3.org/2001/XMLSchema"
+    xmlns:tei="http://www.tei-c.org/ns/1.0" xmlns:html="http://www.w3.org/1999/xhtml"
+    xmlns:xs="http://www.w3.org/2001/XMLSchema"
     xmlns:math="http://www.w3.org/2005/xpath-functions/math" exclude-result-prefixes="#all"
     xmlns="http://www.tei-c.org/ns/1.0" xpath-default-namespace="http://www.tei-c.org/ns/1.0"
     version="3.0">
@@ -118,13 +119,49 @@
             Output is a three-column table, with image, Italian, English columns (in that order)
             English is currently a placeholder, image is pointer in the form of 
                 http://toscana.newtfire.org/img/meetingMinutes/5.png
+            Variables:
+                $page-numbers: page numbers for current year
+                $pages: <page> elements (in pseudo-TEI namespace) for current year
         -->
         <xsl:for-each-group select="$page-chooser//html:li"
             group-by="substring(., string-length(.) - 3)">
+            <!-- numbers of pages for the current year -->
+            <xsl:variable name="page-numbers" as="xs:integer+"
+                select="sort(distinct-values(current-group()/@data-pages/tokenize(., ' ')) ! xs:integer(.))"/>
+            <!-- <page> elements (in pseudo-TEI namespace) for current year -->
+            <xsl:variable name="pages" as="element(tei:page)+"
+                select="$date//tei:page[pb/@n = $page-numbers]"/>
+            <xsl:message select="count($pages)"/>
             <xsl:result-document method="xml" indent="yes" doctype-system="about:legacy-compat"
                 xmlns="http://www.w3.org/1999/xhtml"
-                href="{concat('pages-by-year/',current-grouping-key(),'.xhtml')}"
-            > </xsl:result-document>
+                href="{concat('pages-by-year/',current-grouping-key(),'.xhtml')}">
+                <html>
+                    <head>
+                        <title>
+                            <xsl:value-of select="concat('Minutes of ', current-grouping-key())"/>
+                        </title>
+                    </head>
+                    <body>
+                        <h1>
+                            <xsl:value-of select="concat('Minutes of ', current-grouping-key())"/>
+                        </h1>
+                        <table>
+                            <tr>
+                                <th>Image</th>
+                                <th>Transcription</th>
+                                <th>Translation</th>
+                            </tr>
+                            <xsl:for-each select="$pages">
+                                <tr>
+                                    <td>Image</td>
+                                    <td>Italian</td>
+                                    <td>English</td>
+                                </tr>
+                            </xsl:for-each>
+                        </table>
+                    </body>
+                </html>
+            </xsl:result-document>
         </xsl:for-each-group>
     </xsl:template>
     <!-- Templates to flatten original input, output is $flattened -->
