@@ -135,9 +135,8 @@
             <xsl:variable name="page-numbers" as="xs:integer+"
                 select="sort(distinct-values(current-group()/@data-pages/tokenize(., ' ')) ! xs:integer(.))"/>
             <!-- <page> elements (in pseudo-TEI namespace) for current year -->
-            <xsl:variable name="pages" as="element(tei:page)+"
-                select="$date//tei:page[pb/@n = $page-numbers]"/>
-            <xsl:message select="count($pages)"/>
+            <xsl:variable name="it-pages" as="element(tei:page)+"
+                select="$date//tei:page[@lang eq 'it' and pb/@n = $page-numbers]"/>
             <xsl:result-document method="xml" indent="yes" doctype-system="about:legacy-compat"
                 xmlns="http://www.w3.org/1999/xhtml"
                 href="{concat('pages-by-year/',current-grouping-key(),'.xhtml')}">
@@ -158,7 +157,7 @@
                                 <th>Transcription</th>
                                 <th>Translation</th>
                             </tr>
-                            <xsl:for-each select="$pages">
+                            <xsl:for-each select="$it-pages">
                                 <xsl:variable name="image-link" as="xs:string"
                                     select="concat('http://toscana.newtfire.org/img/meetingMinutes/', current()/pb/@n, '.png')"/>
                                 <tr>
