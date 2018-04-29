@@ -1,3 +1,6 @@
+body {
+    background-color: #f4eee2;
+}
 #page-chooser {
     list-style-type: none;
 }
@@ -16,7 +19,8 @@ th {
 }
 th,
 td {
-    padding: 2px;
+    padding: 1em;
+    vertical-align: top;
 }
 td > h1 {
     font-size: 120%;

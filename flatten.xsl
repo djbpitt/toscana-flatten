@@ -160,6 +160,8 @@
                             <xsl:for-each select="$it-pages">
                                 <xsl:variable name="image-link" as="xs:string"
                                     select="concat('http://toscana.newtfire.org/img/meetingMinutes/', current()/pb/@n, '.png')"/>
+                                <xsl:variable name="eng-page" as="element(tei:page)"
+                                    select="$date//page[@lang eq 'eng' and pb/@n eq current()/pb/@n]"/>
                                 <tr>
                                     <td>
                                         <a href="{$image-link}">
@@ -170,7 +172,10 @@
                                         <xsl:apply-templates select="current()" mode="page-to-html"
                                         />
                                     </td>
-                                    <td>English</td>
+                                    <td>
+                                        <xsl:apply-templates select="$eng-page" mode="page-to-html"
+                                        />
+                                    </td>
                                 </tr>
                             </xsl:for-each>
                         </table>
