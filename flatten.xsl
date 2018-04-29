@@ -10,16 +10,25 @@
     <xsl:template match="/">
         <xsl:variable name="flattened" as="element(wrapper)">
             <wrapper>
-                <xsl:apply-templates select="descendant::div[@type eq 'transcription']/ab"
-                    mode="flatten"/>
+                <xsl:apply-templates select="descendant::div/ab" mode="flatten"/>
             </wrapper>
         </xsl:variable>
         <xsl:variable name="grouped" as="element(wrapper)">
             <wrapper>
                 <xsl:for-each-group select="$flattened/node()" group-starting-with="pb">
-                    <page>
-                        <xsl:apply-templates select="current-group()" mode="grouped"/>
-                    </page>
+                    <xsl:choose>
+                        <xsl:when test="ancestor::div[@type = 'transcription']">
+                            <page lang="it">
+                                <xsl:apply-templates select="current-group()" mode="grouped"/>
+                            </page>
+                        </xsl:when>
+                        <xsl:otherwise>
+                            <page lang="eng">
+                                <xsl:apply-templates select="current-group()" mode="grouped"/>
+                            </page>
+                        </xsl:otherwise>
+                    </xsl:choose>
+
                 </xsl:for-each-group>
             </wrapper>
         </xsl:variable>
@@ -75,8 +84,10 @@
     </xsl:template>
     <!-- Templates to flatten original input, output is $flattened -->
     <xsl:template match="ab" mode="flatten">
-        <xsl:copy-of select="ancestor::TEI//publicationStmt/date"/>
-        <xsl:copy-of select="ancestor::TEI//titleStmt/title[not(empty(.))]"/>
+        <xsl:if test="parent::div[@type = 'transcription']">
+            <xsl:copy-of select="ancestor::TEI//publicationStmt/date"/>
+            <xsl:copy-of select="ancestor::TEI//titleStmt/title[not(empty(.))]"/>
+        </xsl:if>
         <xsl:apply-templates mode="flatten"/>
     </xsl:template>
     <xsl:template match="date" mode="flatten"/>
