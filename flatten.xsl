@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
-    xmlns:html="http://www.w3.org/1999/xhtml"
-    xmlns:xs="http://www.w3.org/2001/XMLSchema"
+    xmlns:html="http://www.w3.org/1999/xhtml" xmlns:xs="http://www.w3.org/2001/XMLSchema"
     xmlns:math="http://www.w3.org/2005/xpath-functions/math" exclude-result-prefixes="#all"
     xmlns="http://www.tei-c.org/ns/1.0" xpath-default-namespace="http://www.tei-c.org/ns/1.0"
     version="3.0">
@@ -27,9 +26,16 @@
             4.  Map years to pages
                 Description: create mapping of years to pages
                 Input: $date
-                Output: $page-chooser
+                Output: $page-chooser, page-chooser.xhtml
                 Note: $page-chooser is serialized as navigation interface, and also used
                     to create separate HTML output for each year
+            5.  Create HTML pages for each year
+                Description: separate HTML file in pages-by-year subdirectory for each year's pages
+                    Output is three column table: image, Italian, English
+                Input: $date (contains <page> elements)
+                Auxiliary input: $page-chooser (mapping from date to pages)
+                Output: 1921.xhtml, etc. in pages-by-year subdirectory
+                
     -->
     <xsl:template match="/">
         <!-- Flatten, group, and fix dates; save output in $date -->
@@ -113,6 +119,13 @@
             English is currently a placeholder, image is pointer in the form of 
                 http://toscana.newtfire.org/img/meetingMinutes/5.png
         -->
+        <xsl:for-each-group select="$page-chooser//html:li"
+            group-by="substring(., string-length(.) - 3)">
+            <xsl:result-document method="xml" indent="yes" doctype-system="about:legacy-compat"
+                xmlns="http://www.w3.org/1999/xhtml"
+                href="{concat('pages-by-year/',current-grouping-key(),'.xhtml')}"
+            > </xsl:result-document>
+        </xsl:for-each-group>
     </xsl:template>
     <!-- Templates to flatten original input, output is $flattened -->
     <xsl:template match="ab" mode="flatten">
