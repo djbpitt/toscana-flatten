@@ -15,19 +15,23 @@
                 Description: flatten all elements, linking start and end tags with shared @tagId values
                 Input: original XML
                 Output: $flattened
+                Mode: templates are in 'flattened' mode
             2.  Group
                 Description: group contents of each page in <page> element
                 Input: $flattened:
                 Output: $grouped
-                Note: Dates and titles are sometimes in the wrong pages
+                Mode: templates are in ''grouped' mode
+                Notes: dates and titles are sometimes in the wrong pages
             3.  Date fix
                 Description: move dates and titles into correct pages
                 Input: $grouped
                 Output: $date   
+                Note: templates are in 'date' mode
             4.  Map years to pages
                 Description: create mapping of years to pages
                 Input: $date
                 Output: $page-chooser, page-chooser.xhtml
+                Mode: pull processing, no templates
                 Note: $page-chooser is serialized as navigation interface, and also used
                     to create separate HTML output for each year
             5.  Create HTML pages for each year
@@ -36,6 +40,7 @@
                 Input: $date (contains <page> elements)
                 Auxiliary input: $page-chooser (mapping from date to pages)
                 Output: 1921.xhtml, etc. in pages-by-year subdirectory
+                Mode: templates are in page-to-html mode
                 
     -->
     <xsl:template match="/">
@@ -140,6 +145,7 @@
                         <title>
                             <xsl:value-of select="concat('Minutes of ', current-grouping-key())"/>
                         </title>
+                        <link rel="stylesheet" type="text/css" href="../css/lega.css"/>
                     </head>
                     <body>
                         <h1>
@@ -152,9 +158,17 @@
                                 <th>Translation</th>
                             </tr>
                             <xsl:for-each select="$pages">
+                                <xsl:variable name="image-link" as="xs:string"
+                                    select="concat('http://toscana.newtfire.org/img/meetingMinutes/', current()/pb/@n, '.png')"/>
                                 <tr>
-                                    <td>Image</td>
-                                    <td>Italian</td>
+                                    <td>
+                                        <a href="{$image-link}">
+                                            <img height="600px" src="{$image-link}"/>
+                                        </a>
+                                    </td>
+                                    <td>
+                                        <xsl:apply-templates mode="page-to-html"/>
+                                    </td>
                                     <td>English</td>
                                 </tr>
                             </xsl:for-each>
