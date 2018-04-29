@@ -167,7 +167,8 @@
                                         </a>
                                     </td>
                                     <td>
-                                        <xsl:apply-templates mode="page-to-html"/>
+                                        <xsl:apply-templates select="current()" mode="page-to-html"
+                                        />
                                     </td>
                                     <td>English</td>
                                 </tr>
@@ -262,4 +263,14 @@
         </xsl:if>
     </xsl:template>
     <!-- End of templates to move dates and titles and create $date -->
+    <!-- Templates to format Italian and English year/page output -->
+    <xsl:template match="lb" mode="page-to-html" xmlns="http://www.w3.org/1999/xhtml">
+        <br/>
+    </xsl:template>
+    <xsl:template match="title" mode="page-to-html" xmlns="http://www.w3.org/1999/xhtml">
+        <h1>
+            <xsl:apply-templates mode="page-to-html"/>
+        </h1>
+    </xsl:template>
+    <!-- End of templates to format Italian and English year/page output -->
 </xsl:stylesheet>
