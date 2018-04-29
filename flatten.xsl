@@ -95,11 +95,21 @@
     </xsl:template>
     <!-- Templates to flatten original input, output is $flattened -->
     <xsl:template match="ab" mode="flatten">
+        <!-- 
+            We process just the Italian <ab> elements, but fetch the entry <date> (obligatory)
+            and <title> (optional, may include main and sub) from the <teiHeader>
+            They may be in the wrong place; we move them later
+        -->
         <xsl:copy-of select="ancestor::TEI//publicationStmt/date"/>
         <xsl:copy-of select="ancestor::TEI//titleStmt/title[not(empty(.))]"/>
         <xsl:apply-templates mode="flatten"/>
     </xsl:template>
+    <!-- Ignore internal dates (e.g., committee dates); the only ones we care about are the meeting dates -->
     <xsl:template match="date" mode="flatten"/>
+    <!-- 
+        Flatten all elements, creating separate empty "start" and "end" tags (put attributes on both)
+        Start and end tags share an @tagId, so that they can be re-erected later, if needed
+    -->
     <xsl:template match="*" mode="flatten">
         <xsl:element name="{name()}">
             <xsl:attribute name="tagType" select="'startTag'"/>
@@ -122,9 +132,11 @@
             <xsl:apply-templates select="node() | @*" mode="grouped"/>
         </xsl:copy>
     </xsl:template>
+    <!-- <lb> should come out as a single milestone with non attributes -->
     <xsl:template match="lb" mode="grouped">
         <xsl:element name="{name()}"/>
     </xsl:template>
+    <!--  <pb> should come out as a single milestone with original attributes only -->
     <xsl:template match="pb" mode="grouped">
         <pb>
             <xsl:apply-templates select="@* except (@tagType | @tagId)" mode="grouped"/>
@@ -133,19 +145,33 @@
     <!-- End of templates to group by page and created $grouped -->
     <!-- Templates to move stupid dates and titles, output is $date -->
     <xsl:template match="page" mode="date">
+        <!-- Throw away most markup passively, by letting the built-in do the work -->
         <xsl:copy>
+            <!--
+                If the immediately preceding <page> ends in <date> and <title> elements, copy those into the current <page>
+                (We'll also delete them from the preceding one, below)
+            -->
             <xsl:copy-of
                 select="preceding-sibling::page[1]/(date | title)[not(following-sibling::*[not(self::date | self::title)])]"/>
             <xsl:apply-templates mode="date"/>
         </xsl:copy>
     </xsl:template>
     <xsl:template match="pb | del | unclear" mode="date">
+        <!-- 
+            <pb> contains @n for page number and @facs for image
+            <del> and <unclear> may have content that we'll want to tag by restoring wrapper elements
+        -->
         <xsl:copy-of select="."/>
     </xsl:template>
     <xsl:template match="lb" mode="date">
+        <!-- remove any attributes from <lb>, which is necessarily empty -->
         <lb/>
     </xsl:template>
     <xsl:template match="date | title" mode="date">
+        <!-- 
+            Remove <date> and <title> elements at end of page
+            We copy them (above) to the following page, effectively moving them
+        -->
         <xsl:if test="following-sibling::*[not(self::title | self::date)]">
             <xsl:copy-of select="."/>
         </xsl:if>
