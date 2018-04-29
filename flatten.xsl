@@ -5,7 +5,26 @@
     xmlns="http://www.tei-c.org/ns/1.0" xpath-default-namespace="http://www.tei-c.org/ns/1.0"
     version="3.0">
     <xsl:output method="xml" indent="yes"/>
+    <!--
+        Workflow
+            Note: Interim structures are in TEI namespace, but are not valid TEI
+            1.  Flatten
+                Description: flatten all elements, linking start and end tags with shared @tagId values
+                Input: original XML
+                Output: $flattened
+            2.  Group
+                Description: group contents of each page in <page> element
+                Input: $flattened:
+                Output: $grouped
+                Note: Dates and titles are sometimes in the wrong pages
+            3.  Date fix
+                Description: move dates and titles into correct pages
+                Input: $grouped
+                Output: $date   
+            4.  
+    -->
     <xsl:template match="/">
+        <!-- Flatten, group, and fix dates; save output in $date -->
         <xsl:variable name="flattened" as="element(wrapper)">
             <wrapper>
                 <xsl:apply-templates select="descendant::div[@type eq 'transcription']/ab"
@@ -26,7 +45,10 @@
                 <xsl:apply-templates select="$grouped" mode="date"/>
             </wrapper>
         </xsl:variable>
+        <!-- $date has been created, now do something with it -->
+        <!-- Temporarily write date-fixed pages to stdout-->
         <xsl:sequence select="$date"/>
+        <!-- Create HTML file that points from dates to pages -->
         <xsl:result-document href="pages-by-meeting.xhtml" doctype-system="about:legacy-compat"
             method="xml" indent="yes" xmlns="http://www.w3.org/1999/xhtml">
             <html>
@@ -93,7 +115,8 @@
             </xsl:element>
         </xsl:if>
     </xsl:template>
-    <!-- Templates to output groups by page -->
+    <!-- End of templates to flatten original and create $flattened -->
+    <!-- Templates to group by page, output is $grouped -->
     <xsl:template match="node() | @*" mode="grouped">
         <xsl:copy>
             <xsl:apply-templates select="node() | @*" mode="grouped"/>
@@ -107,7 +130,8 @@
             <xsl:apply-templates select="@* except (@tagType | @tagId)" mode="grouped"/>
         </pb>
     </xsl:template>
-    <!-- Templates to move stupid dates -->
+    <!-- End of templates to group by page and created $grouped -->
+    <!-- Templates to move stupid dates and titles, output is $date -->
     <xsl:template match="page" mode="date">
         <xsl:copy>
             <xsl:copy-of
@@ -126,4 +150,5 @@
             <xsl:copy-of select="."/>
         </xsl:if>
     </xsl:template>
+    <!-- End of templates to move dates and titles and create $date -->
 </xsl:stylesheet>
