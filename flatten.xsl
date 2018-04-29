@@ -1,11 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+    xmlns:html="http://www.w3.org/1999/xhtml"
     xmlns:xs="http://www.w3.org/2001/XMLSchema"
-    xmlns:math="http://www.w3.org/2005/xpath-functions/math" exclude-result-prefixes="xs math"
+    xmlns:math="http://www.w3.org/2005/xpath-functions/math" exclude-result-prefixes="#all"
     xmlns="http://www.tei-c.org/ns/1.0" xpath-default-namespace="http://www.tei-c.org/ns/1.0"
     version="3.0">
     <xsl:output method="xml" indent="yes"/>
     <!--
+        Note: Transformation must be run with Saxon PE or EE (not HE) to get Italian
+            output from format-date()
         Workflow
             Note: Interim structures are in TEI namespace, but are not valid TEI
             1.  Flatten
@@ -21,7 +24,12 @@
                 Description: move dates and titles into correct pages
                 Input: $grouped
                 Output: $date   
-            4.  
+            4.  Map years to pages
+                Description: create mapping of years to pages
+                Input: $date
+                Output: $page-chooser
+                Note: $page-chooser is serialized as navigation interface, and also used
+                    to create separate HTML output for each year
     -->
     <xsl:template match="/">
         <!-- Flatten, group, and fix dates; save output in $date -->
@@ -45,13 +53,16 @@
                 <xsl:apply-templates select="$grouped" mode="date"/>
             </wrapper>
         </xsl:variable>
-        <!-- $date has been created, now do something with it -->
-        <!-- Temporarily write date-fixed pages to stdout-->
-        <xsl:sequence select="$date"/>
-        <!-- Create HTML file that points from dates to pages -->
-        <xsl:result-document href="pages-by-meeting.xhtml" doctype-system="about:legacy-compat"
-            method="xml" indent="yes" xmlns="http://www.w3.org/1999/xhtml">
-            <html>
+        <!-- 
+            $date has been created, now do something with it
+            create mapping of dates to pages first because it's needed to group dates by year 
+        -->
+        <!-- 
+            Create HTML file that points from dates to pages
+            Store as $page-chooser and serialize as page-chooser.xhtml
+        -->
+        <xsl:variable name="page-chooser" as="element(html:html)">
+            <html xmlns="http://www.w3.org/1999/xhtml">
                 <head>
                     <title>Hey, choose a meeting!</title>
                     <link type="text/css" rel="stylesheet" href="css/lega.css"/>
@@ -91,7 +102,17 @@
                     </ul>
                 </body>
             </html>
+        </xsl:variable>
+        <xsl:result-document href="pages-by-meeting.xhtml" doctype-system="about:legacy-compat"
+            method="xml" indent="yes" xmlns="http://www.w3.org/1999/xhtml">
+            <xsl:sequence select="$page-chooser"/>
         </xsl:result-document>
+        <!-- 
+            Create HTML output for each year
+            Output is a three-column table, with image, Italian, English columns (in that order)
+            English is currently a placeholder, image is pointer in the form of 
+                http://toscana.newtfire.org/img/meetingMinutes/5.png
+        -->
     </xsl:template>
     <!-- Templates to flatten original input, output is $flattened -->
     <xsl:template match="ab" mode="flatten">
