@@ -126,8 +126,13 @@
             <xsl:apply-templates mode="date"/>
         </xsl:copy>
     </xsl:template>
-    <xsl:template match="pb | del | unclear" mode="date">
+    <xsl:template match="del | unclear" mode="date">
         <xsl:copy-of select="."/>
+    </xsl:template>
+    <xsl:template match="pb" mode="date">
+<xsl:copy>
+    <xsl:copy-of select="@* except @lang"/>
+</xsl:copy>
     </xsl:template>
     <xsl:template match="lb" mode="date">
         <lb/>
